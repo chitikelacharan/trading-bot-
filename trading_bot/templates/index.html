@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Binance Futures Testnet Trading Bot</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0b0e1a;color:#e2e8f0;min-height:100vh}
+:root{--gold:#f0b90b;--green:#0ecb81;--red:#f6465d;--blue:#1e3a5f;--card:#131722;--border:#1e2739}
+
+/* NAV */
+nav{background:#0d1117;border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem;color:var(--gold)}
+.logo svg{width:28px;height:28px}
+.nav-status{display:flex;align-items:center;gap:8px;font-size:.85rem;color:#64748b}
+.dot{width:8px;height:8px;border-radius:50%;background:#334155}
+.dot.green{background:var(--green);box-shadow:0 0 8px var(--green)}
+
+/* LAYOUT */
+.container{max-width:1100px;margin:0 auto;padding:32px 16px}
+h1{font-size:1.6rem;font-weight:700;margin-bottom:4px}
+.subtitle{color:#64748b;font-size:.9rem;margin-bottom:32px}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:768px){.grid{grid-template-columns:1fr}}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px}
+.card h2{font-size:1rem;font-weight:600;margin-bottom:20px;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em}
+
+/* FORM */
+.field{margin-bottom:16px}
+label{display:block;font-size:.8rem;font-weight:500;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+input,select{width:100%;background:#0b0e1a;border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:#e2e8f0;font-size:.95rem;font-family:'Inter',sans-serif;transition:border .2s}
+input:focus,select:focus{outline:none;border-color:var(--gold)}
+select option{background:#131722}
+
+.seg{display:flex;gap:8px;margin-bottom:16px}
+.seg-btn{flex:1;padding:9px;border:1px solid var(--border);border-radius:8px;background:transparent;color:#64748b;font-size:.9rem;font-weight:500;cursor:pointer;transition:all .2s}
+.seg-btn.active-buy{background:rgba(14,203,129,.15);border-color:var(--green);color:var(--green)}
+.seg-btn.active-sell{background:rgba(246,70,93,.15);border-color:var(--red);color:var(--red)}
+
+.tabs{display:flex;gap:6px;margin-bottom:20px}
+.tab{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;color:#64748b;font-size:.85rem;cursor:pointer;transition:all .2s}
+.tab.active{background:var(--gold);border-color:var(--gold);color:#000;font-weight:600}
+
+.btn{width:100%;padding:13px;border:none;border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;transition:all .2s;margin-top:8px}
+.btn-buy{background:var(--green);color:#fff}
+.btn-sell{background:var(--red);color:#fff}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* RIGHT PANEL */
+.right{display:flex;flex-direction:column;gap:20px}
+
+/* PING BAR */
+.ping-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.ping-label{font-size:.85rem;color:#64748b}
+.ping-btn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 14px;color:#94a3b8;font-size:.8rem;cursor:pointer;transition:all .2s}
+.ping-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* RESULT */
+.result{min-height:160px}
+.result-empty{display:flex;align-items:center;justify-content:center;height:150px;color:#334155;font-size:.9rem;flex-direction:column;gap:8px}
+.result-empty svg{opacity:.3}
+
+.result-box{border-radius:10px;padding:16px;font-size:.88rem;line-height:1.7}
+.result-box.success{background:rgba(14,203,129,.08);border:1px solid rgba(14,203,129,.25)}
+.result-box.error{background:rgba(246,70,93,.08);border:1px solid rgba(246,70,93,.3)}
+.result-box .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600;margin-bottom:10px}
+.tag.filled{background:var(--green);color:#fff}
+.tag.new{background:#3b82f6;color:#fff}
+.tag.error{background:var(--red);color:#fff}
+
+.kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.kv:last-child{border:none}
+.kv .k{color:#64748b}
+.kv .v{font-weight:500;color:#e2e8f0}
+
+/* ACCOUNT */
+.balance-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.balance-table th{text-align:left;color:#64748b;font-size:.75rem;text-transform:uppercase;padding:6px 0;border-bottom:1px solid var(--border)}
+.balance-table td{padding:10px 0;border-bottom:1px solid #0d1117}
+.pnl-pos{color:var(--green)}
+.pnl-neg{color:var(--red)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e2739;border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:.88rem;transform:translateY(100px);opacity:0;transition:all .3s;z-index:99}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* SPINNER */
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="var(--gold)"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    Binance Futures Testnet Bot
+  </div>
+  <div class="nav-status">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">Checking…</span>
+  </div>
+</nav>
+
+<div class="container">
+  <h1>⚡ Trading Dashboard</h1>
+  <p class="subtitle">USDT-M Futures · Testnet · Place orders in seconds</p>
+
+  <div class="grid">
+    <!-- LEFT: Order Form -->
+    <div class="card">
+      <h2>Place Order</h2>
+
+      <!-- BUY / SELL toggle -->
+      <div class="seg">
+        <button class="seg-btn active-buy" id="btnBuy" onclick="setSide('BUY')">▲ BUY / LONG</button>
+        <button class="seg-btn" id="btnSell" onclick="setSide('SELL')">▼ SELL / SHORT</button>
+      </div>
+
+      <!-- Order type tabs -->
+      <div class="tabs">
+        <button class="tab active" id="tabMARKET" onclick="setType('MARKET')">Market</button>
+        <button class="tab" id="tabLIMIT" onclick="setType('LIMIT')">Limit</button>
+        <button class="tab" id="tabSTOP_MARKET" onclick="setType('STOP_MARKET')">Stop-Market</button>
+      </div>
+
+      <div class="field">
+        <label>Symbol</label>
+        <input id="symbol" type="text" value="BTCUSDT" placeholder="e.g. BTCUSDT" oninput="this.value=this.value.toUpperCase()"/>
+      </div>
+      <div class="field">
+        <label>Quantity</label>
+        <input id="quantity" type="number" step="0.001" min="0.001" placeholder="e.g. 0.01"/>
+      </div>
+      <div class="field" id="priceField" style="display:none">
+        <label>Limit Price (USDT)</label>
+        <input id="price" type="number" step="0.01" min="0" placeholder="e.g. 95000"/>
+      </div>
+      <div class="field" id="stopPriceField" style="display:none">
+        <label>Stop Price (USDT)</label>
+        <input id="stopPrice" type="number" step="0.01" min="0" placeholder="e.g. 50000"/>
+      </div>
+
+      <button class="btn btn-buy" id="submitBtn" onclick="submitOrder()">Place BUY Order</button>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+
+      <!-- Ping bar -->
+      <div class="ping-bar">
+        <span class="ping-label">🔗 Testnet Connection</span>
+        <button class="ping-btn" onclick="doPing()">Test Ping</button>
+      </div>
+
+      <!-- Result card -->
+      <div class="card result">
+        <h2>Order Result</h2>
+        <div id="resultArea">
+          <div class="result-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0120 9.414V19a2 2 0 01-2 2z"/></svg>
+            No order placed yet
+          </div>
+        </div>
+      </div>
+
+      <!-- Account balances -->
+      <div class="card">
+        <h2 style="display:flex;justify-content:space-between;align-items:center">
+          Account Balances
+          <button class="ping-btn" onclick="loadAccount()">Refresh</button>
+        </h2>
+        <div id="accountArea">
+          <div class="result-empty" style="height:80px">Click Refresh to load</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentSide = 'BUY';
+let currentType = 'MARKET';
+
+function setSide(s) {
+  currentSide = s;
+  document.getElementById('btnBuy').className  = 'seg-btn' + (s==='BUY'  ? ' active-buy'  : '');
+  document.getElementById('btnSell').className = 'seg-btn' + (s==='SELL' ? ' active-sell' : '');
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = `Place ${s} Order`;
+  btn.className = s === 'BUY' ? 'btn btn-buy' : 'btn btn-sell';
+}
+
+function setType(t) {
+  currentType = t;
+  ['MARKET','LIMIT','STOP_MARKET'].forEach(x => {
+    document.getElementById('tab'+x).className = 'tab' + (x===t ? ' active' : '');
+  });
+  document.getElementById('priceField').style.display      = t==='LIMIT'       ? '' : 'none';
+  document.getElementById('stopPriceField').style.display  = t==='STOP_MARKET' ? '' : 'none';
+}
+
+function showToast(msg, ok=true) {
+  const el = document.getElementById('toast');
+  el.textContent = (ok ? '✅ ' : '❌ ') + msg;
+  el.style.borderColor = ok ? 'var(--green)' : 'var(--red)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+async function doPing() {
+  const dot  = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  text.textContent = 'Pinging…';
+  dot.className = 'dot';
+  try {
+    const r = await fetch('/api/ping');
+    const d = await r.json();
+    if (d.status === 'ok') {
+      dot.className = 'dot green';
+      text.textContent = 'Testnet Online';
+      showToast('Testnet reachable ✓');
+    } else {
+      dot.className = 'dot'; text.textContent = 'Offline';
+      showToast(d.message, false);
+    }
+  } catch(e) { dot.className='dot'; text.textContent='Error'; showToast(e.message,false); }
+}
+
+async function loadAccount() {
+  const area = document.getElementById('accountArea');
+  area.innerHTML = '<div class="result-empty" style="height:60px"><span class="spinner"></span> Loading…</div>';
+  try {
+    const r = await fetch('/api/account');
+    const d = await r.json();
+    if (d.status !== 'ok') throw new Error(d.message);
+    if (!d.assets.length) { area.innerHTML='<div class="result-empty" style="height:60px">No funded assets</div>'; return; }
+    let html = '<table class="balance-table"><thead><tr><th>Asset</th><th>Wallet Balance</th><th>Unrealised PnL</th></tr></thead><tbody>';
+    d.assets.forEach(a => {
+      const pnl = parseFloat(a.unrealizedProfit||0);
+      const cls = pnl>=0?'pnl-pos':'pnl-neg';
+      html += `<tr><td>${a.asset}</td><td>${parseFloat(a.walletBalance).toFixed(4)}</td><td class="${cls}">${pnl.toFixed(4)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    area.innerHTML = html;
+  } catch(e) { area.innerHTML=`<div class="result-empty" style="height:60px;color:var(--red)">${e.message}</div>`; }
+}
+
+async function submitOrder() {
+  const btn = document.getElementById('submitBtn');
+  const sym = document.getElementById('symbol').value.trim();
+  const qty = document.getElementById('quantity').value;
+  const prc = document.getElementById('price').value;
+  const stp = document.getElementById('stopPrice').value;
+
+  if (!sym || !qty) { showToast('Symbol and quantity are required', false); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Placing…';
+
+  const body = {
+    symbol: sym, side: currentSide, order_type: currentType,
+    quantity: parseFloat(qty),
+    price: prc ? parseFloat(prc) : null,
+    stop_price: stp ? parseFloat(stp) : null
+  };
+
+  try {
+    const r = await fetch('/api/order', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    const d = await r.json();
+    const area = document.getElementById('resultArea');
+
+    if (d.status === 'ok') {
+      const res = d.result;
+      const st  = res.status||'';
+      const tagCls = st==='FILLED'?'filled':st==='NEW'?'new':'filled';
+      const avgP = parseFloat(res.avgPrice||0);
+      const execQ= parseFloat(res.executedQty||0);
+      area.innerHTML = `
+        <div class="result-box success">
+          <span class="tag ${tagCls}">${st}</span>
+          <div class="kv"><span class="k">Order ID</span><span class="v">${res.orderId}</span></div>
+          <div class="kv"><span class="k">Symbol</span><span class="v">${res.symbol}</span></div>
+          <div class="kv"><span class="k">Side</span><span class="v">${res.side}</span></div>
+          <div class="kv"><span class="k">Type</span><span class="v">${res.type}</span></div>
+          <div class="kv"><span class="k">Orig Qty</span><span class="v">${res.origQty}</span></div>
+          <div class="kv"><span class="k">Executed Qty</span><span class="v">${execQ}</span></div>
+          ${avgP>0?`<div class="kv"><span class="k">Avg Price</span><span class="v">$${avgP.toFixed(2)}</span></div>`:''}
+          ${parseFloat(res.price||0)>0?`<div class="kv"><span class="k">Limit Price</span><span class="v">$${parseFloat(res.price).toFixed(2)}</span></div>`:''}
+        </div>`;
+      showToast(`Order ${st}! ID: ${res.orderId}`);
+    } else {
+      area.innerHTML = `<div class="result-box error"><span class="tag error">FAILED</span><p>${d.message}</p></div>`;
+      showToast(d.message, false);
+    }
+  } catch(e) {
+    showToast('Network error: ' + e.message, false);
+  } finally {
+    btn.disabled = false;
+    setSide(currentSide);
+  }
+}
+
+// Init
+window.onload = () => { doPing(); setType('MARKET'); };
+</script>
+</body>
+</html>
